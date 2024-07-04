@@ -1,21 +1,12 @@
-FROM node:alpine as builder
-
-WORKDIR /app
-COPY package.json package-lock.json ./
-ENV CI=1
-RUN npm ci
-
-COPY . .
-RUN npm run build -- --output-path=/dist
-
-# Deploy our Angular app to NGINX
-FROM nginx:alpine
-
-## Replace the default nginx index page with our Angular app
-RUN rm -rf /usr/share/nginx/html/*
-COPY --from=builder /app /usr/share/nginx/html
-
-COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
-COPY ./nginx/gzip.conf /etc/nginx/gzip.conf
-
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+From nginx
+COPY . /opt
+WORKDIR /opt/angular
+RUN apt update
+RUN apt install nodejs npm -y
+RUN npm install -g @angular/cli
+# Replace the localhost with the public IP and the port 8080 with 8085 in WorkerService
+COPY worker.service.ts /opt/angular/src/app/services/worker.service.ts
+RUN npm install
+RUN ng build 
+EXPOSE 30080
+CMD ["ng", "serve", "--host", "0.0.0.0", "--port", "30080"]
