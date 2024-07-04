@@ -1,12 +1,10 @@
-FROM johnpapa/angular-cli as angular-built
-WORKDIR /usr/src/app
-COPY package.json package.json
-RUN npm install --silent
-COPY . .
-RUN ng build --prod
+FROM node:16-alpine AS build
+WORKDIR /app
 
+COPY . .
+RUN npm install
+RUN npm run build
+# Serve Application using Nginx Server
 FROM nginx:alpine
-LABEL author="Preston Lamb"
-COPY --from=angular-built /usr/src/app/dist /usr/share/nginx/html
-EXPOSE 80 443
-CMD [ "nginx", "-g", "daemon off;" ]
+COPY --from=build /app/dist/project-name/ /usr/share/nginx/html
+EXPOSE 80
