@@ -1,22 +1,12 @@
-FROM node:alpine as builder
-
-WORKDIR /app
-COPY package.json package-lock.json ./
-ENV CI=1
-RUN npm ci
-
+FROM johnpapa/angular-cli as angular-built
+WORKDIR /usr/src/app
+COPY package.json package.json
+RUN npm install --silent
 COPY . .
-RUN npm run build -- --output-path=/dist
+RUN ng build --prod
 
-# Deploy our Angular app to NGINX
 FROM nginx:alpine
-
-## Replace the default nginx index page with our Angular app
-RUN rm -rf /usr/share/nginx/html/*
-COPY  --from=builder /usr/src/app/dist /usr/share/nginx/html
-#COPY --from=builder /dist/browser /usr/share/nginx/html
-
-COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
-COPY ./nginx/gzip.conf /etc/nginx/gzip.conf
-
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+LABEL author="Preston Lamb"
+COPY --from=angular-built /usr/src/app/dist /usr/share/nginx/html
+EXPOSE 80 443
+CMD [ "nginx", "-g", "daemon off;" ]
